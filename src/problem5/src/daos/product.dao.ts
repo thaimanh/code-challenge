@@ -1,6 +1,5 @@
 import { Knex } from "knex";
 import { IProduct } from "../models/product.model";
-import { keys } from "ts-transformer-keys";
 import BaseDao from "../daos/base/base.dao";
 
 class ProductDao extends BaseDao<IProduct> {
@@ -31,12 +30,9 @@ class ProductDao extends BaseDao<IProduct> {
     item: Partial<IProduct>,
     transaction?: Knex.Transaction
   ): Promise<IProduct> {
-    const uuid = await this.getUUID();
-
     return super.add(
       {
         ...item,
-        id: uuid,
       },
       transaction
     );

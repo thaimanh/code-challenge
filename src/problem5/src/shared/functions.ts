@@ -1,37 +1,9 @@
 import express from "express";
 import { IObject } from "./constants";
 import { dateToDateStr } from "./dateUtils";
-// import logger from "./Logger";
-const crypto = require("crypto");
 
 const NON_CAMEL_SPLIT_REGEX = /([-_][a-z0-9])/gi;
 const NON_SNAKE_SPLIT_REGEX = /[A-Z]/g;
-
-// export const pErr = (err: Error) => {
-//   if (err) {
-//     logger.err(err);
-//   }
-// };
-
-export const addZero = (item: string | number, length: number) => {
-  return item.toString().padStart(length, "0");
-};
-
-export const hashMd5 = (str: string, salt?: string): string => {
-  return crypto
-    .createHash("md5")
-    .update(String(str || "") + String(salt || ""))
-    .digest("hex");
-};
-
-export const compareHash = (
-  str: string = "",
-  strHash: string = "",
-  salt?: string
-): boolean => {
-  const hashed = hashMd5(str, salt);
-  return hashed === strHash;
-};
 
 export const wait = (mili: number) =>
   new Promise((resolve) => setTimeout(resolve, mili));
@@ -150,7 +122,7 @@ export const objArrDistinct = <T>(arr: T[], indexKey: keyof T) => {
   return Object.values(normalizedObject) as T[];
 };
 
-export const objFilterKeys = (objSrc: IObject<any>, keys: string[]) => {
+export const objIncludeKeys = (objSrc: IObject<any>, keys: string[]) => {
   if (!(objSrc instanceof Object)) {
     objSrc = {};
   }
@@ -158,6 +130,19 @@ export const objFilterKeys = (objSrc: IObject<any>, keys: string[]) => {
   for (const key of keys) {
     if (key in objSrc) {
       objDest[key] = objSrc[key];
+    }
+  }
+  return objDest;
+};
+
+export const objIgnoreKeys = (objSrc: IObject<any>, keys: string[]) => {
+  if (!(objSrc instanceof Object)) {
+    objSrc = {};
+  }
+  const objDest: IObject<any> = objSrc;
+  for (const key of keys) {
+    if (key in objSrc) {
+      delete objDest[key];
     }
   }
   return objDest;

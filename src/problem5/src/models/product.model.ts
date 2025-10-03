@@ -37,4 +37,4 @@ export type CreateProductDto = Omit<
 export type UpdateProductDto = Partial<CreateProductDto>;
 
 export default interface IResponseProductList
-  extends Pick<IProduct, "name" | "price" | "delFlg"> {}
+  extends Pick<IProduct, "name" | "price"> {}

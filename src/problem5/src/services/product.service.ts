@@ -1,13 +1,16 @@
-import {
+import IResponseProductList, {
   IProduct,
   CreateProductDto,
   UpdateProductDto,
+  insertBodyShape,
 } from "../models/product.model";
 import { HTTPError } from "../shared/errors";
 import productDAO from "../daos/product.dao";
 import { IResponseCommon, IResponseSuccess } from "../models/base.model";
 import STT from "http-status";
 import { ERROR_MESSAGE } from "../shared/constants";
+import * as yup from "yup";
+import { objIgnoreKeys, objIncludeKeys } from "../shared/functions";
 
 interface ISearchProductParams {
   name?: string;
@@ -24,23 +27,27 @@ class ProductService {
   async getList(
     params: ISearchProductParams,
     pagination: IPaginationParams
-  ): Promise<IResponseCommon<IProduct[]>> {
+  ): Promise<IResponseCommon<IResponseProductList[]>> {
     const { name, minPrice } = params;
     const { limit = 10, offset = 0 } = pagination;
 
-    const [list, total] = await Promise.all([
-      productDAO.getMany(
-        { name, delFlg: undefined, price: [">=", minPrice] },
-        {
-          limit,
-          offset,
-        }
-      ),
-      productDAO.getTotal({ name, price: [">=", minPrice] }),
+    const condition = {
+      name: name ? ["LIKE", `%${name}%`] : undefined,
+      price: minPrice ? [">=", minPrice] : undefined,
+    };
+
+    const [products, total] = await Promise.all([
+      productDAO.getMany(condition, {
+        limit,
+        offset,
+      }),
+      productDAO.getTotal(condition),
     ]);
 
     return {
-      result: list,
+      result: <IResponseProductList[]>(
+        products.map((p) => objIncludeKeys(p, ["id", "name", "price"]))
+      ),
       meta: {
         total,
         offset,
@@ -57,7 +64,7 @@ class ProductService {
     }
 
     return {
-      result: product,
+      result: <IProduct>objIgnoreKeys(product, ["delFlg"]),
       meta: {},
     };
   }
@@ -66,11 +73,10 @@ class ProductService {
     try {
       await productDAO.add(data);
       return { success: true };
-    } catch (error) {
-      console.error("Error creating product:", error);
+    } catch (error: any) {
       throw new HTTPError(
-        ERROR_MESSAGE.RESOURCE_CREATION_FAILED,
-        STT.INTERNAL_SERVER_ERROR
+        error.message ? error.message : ERROR_MESSAGE.RESOURCE_CREATION_FAILED,
+        error.status ? error.status : STT.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -80,26 +86,26 @@ class ProductService {
     productData: UpdateProductDto
   ): Promise<IResponseSuccess> {
     try {
+      await this.getDetail(id);
       await productDAO.update({ id }, productData);
       return { success: true };
-    } catch (error) {
-      console.error("Error updating product:", error);
+    } catch (error: any) {
       throw new HTTPError(
-        ERROR_MESSAGE.RESOURCE_UPDATE_FAILED,
-        STT.INTERNAL_SERVER_ERROR
+        error.message ? error.message : ERROR_MESSAGE.RESOURCE_UPDATE_FAILED,
+        error.statusCode ? error.statusCode : STT.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   async delete(id: string): Promise<IResponseSuccess> {
     try {
+      await this.getDetail(id);
       await productDAO.delete({ id });
       return { success: true };
-    } catch (error) {
-      console.error("Error deleting product:", error);
+    } catch (error: any) {
       throw new HTTPError(
-        ERROR_MESSAGE.RESOURCE_UPDATE_FAILED,
-        STT.INTERNAL_SERVER_ERROR
+        error.message ? error.message : ERROR_MESSAGE.RESOURCE_DELETION_FAILED,
+        error.statusCode ? error.statusCode : STT.INTERNAL_SERVER_ERROR
       );
     }
   }

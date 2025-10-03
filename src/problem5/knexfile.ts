@@ -1,10 +1,11 @@
+import config from "./src/config";
+
 const connection = {
-  host: process.env.DB_MASTER_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-  // timezone: 'utc',
+  host: config.dbMasterHost,
+  user: config.dbUser,
+  password: config.dbPassword,
+  database: config.dbName,
+  port: config.dbPort,
 };
 
 const sslConnection = {
@@ -63,7 +64,8 @@ FOR EACH ROW
 EXECUTE PROCEDURE on_update_timestamp();`;
 
 module.exports = {
-  ...settings["development"],
+  ...(settings[config.nodeEnv as keyof typeof settings] ||
+    settings.development),
   ...sharedConfig,
   onUpdateTrigger,
 };
